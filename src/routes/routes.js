@@ -45,6 +45,79 @@ router.post('/cadastrar-aluno', async (req, res) => {
   }
 });
 
+// buscar aluno por id
+router.get('/aluno/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const aluno = await db('alunos').select('*').where({ id }).first();
+
+    if (!aluno) {
+      return res.status(404).json({ error: 'Aluno não encontrado' });
+    }
+
+    return res.json(aluno);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar aluno' });
+  }
+});
+
+// atualizar aluno
+router.put('/aluno/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nome, idade, numero_chamada } = req.body;
+
+  if (!nome || !idade || !numero_chamada) {
+    return res.status(400).json({
+      error: 'TODOS OS CAMPOS SÃO OBRIGATÓRIOS',
+    });
+  }
+
+  const aluno = {
+    nome,
+    idade,
+    numero_chamada,
+  };
+
+  try {
+    const alunoExiste = await db('alunos').where({ id }).first();
+
+    if (!alunoExiste) {
+      return res.status(404).json({ error: 'Aluno não encontrado' });
+    }
+
+    await db('alunos').where({ id }).update(aluno);
+
+    res.json({
+      message: 'Aluno atualizado com sucesso',
+      id,
+      nome,
+      idade,
+      numero_chamada,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar aluno' });
+  }
+});
+
+//deletar aluno
+router.delete('/aluno/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const alunoExiste = await db('alunos').where({ id }).first();
+
+    if (!alunoExiste) {
+      return res.status(404).json({ error: 'Aluno não encontrado' });
+    }
+    await db('alunos').where({ id }).delete();
+
+    res.json({ message: 'Aluno deletado com sucesso' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao deletar aluno' });
+  }
+});
+
 module.exports = router;
 
 //{
