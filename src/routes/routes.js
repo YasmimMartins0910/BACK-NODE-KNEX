@@ -3,7 +3,26 @@ const router = express.Router();
 
 const db = require('../../database/connection');
 
+const verificarToken = require('../../src/Middleware/authorization');
+
 const bcrypt = require('bcrypt');
+
+const jwt = require('jsonwebtoken');
+
+router.get('/meu-perfil', verificarToken, async (req, res) => {
+  const usuario = req.usuario;
+
+  const aluno = await db('alunos').where({ id: usuario.id }).first();
+
+  if (!aluno) {
+    return res.status(404).json({ error: 'Aluno não encontrado' });
+  }
+
+  res.json({
+    id: aluno.id,
+    nome: aluno.nome,
+  });
+});
 
 router.post('/novo-aluno', async (req, res) => {
   const { nome, idade, numero_chamada, senha } = req.body;
@@ -28,15 +47,13 @@ router.post('/novo-aluno', async (req, res) => {
       return res.status(400).json({ error: 'Erro ao cadastrar aluno' });
     }
 
-    res
-      .status(201)
-      .json({
-        messagem: 'Aluno cadastrado com sucesso',
-        id,
-        nome,
-        idade,
-        numero_chamada,
-      });
+    res.status(201).json({
+      messagem: 'Aluno cadastrado com sucesso',
+      id,
+      nome,
+      idade,
+      numero_chamada,
+    });
   } catch (error) {
     res.status(500).json({ error: 'Erro ao cadastrar aluno' });
   }
@@ -61,10 +78,22 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Senha incorreta' });
   }
 
+  const payload = { id: usuario.id, nome: usuario.nome, role: 'aluno' };
+
+  const segredo = process.env.JWT_SECRET || 'meu-segredo-aqui';
+
+  // Assinamos o token com nosso segredo
+  const token = jwt.sign(
+    payload,
+    segredo, // Nosso segredo do .env
+    { expiresIn: '1h' }, // Token expira em 1 hora
+  );
+
   res.json({
     message: 'Login bem-sucedido',
     id: usuario.id,
     nome: usuario.nome,
+    token,
   });
 });
 
@@ -92,15 +121,13 @@ router.post('/cadastrar-aluno', async (req, res) => {
       return res.status(400).json({ error: 'Erro ao cadastrar aluno' });
     }
 
-    res
-      .status(201)
-      .json({
-        message: 'Aluno cadastrado com sucesso',
-        id,
-        nome,
-        idade,
-        numero_chamada,
-      });
+    res.status(201).json({
+      message: 'Aluno cadastrado com sucesso',
+      id,
+      nome,
+      idade,
+      numero_chamada,
+    });
   } catch (error) {
     res.status(500).json({ error: 'Erro ao cadastrar alunos' });
   }
